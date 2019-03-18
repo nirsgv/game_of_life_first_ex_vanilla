@@ -1,0 +1,8 @@
+th.on {
+    background-color: green;
+}
+th {
+    background-color: white;
+    width: 5px;
+    height: 5px;
+}
