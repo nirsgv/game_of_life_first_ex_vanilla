@@ -10,6 +10,31 @@ let game = (function () {
         ths: document.getElementsByTagName('th'),
         intervalHolder: null,
     };
+    board.stopButton.addEventListener('click',() => {closeMoving()});
+    board.startButton.addEventListener('click',() => {startMoving()});
+    document.addEventListener('click', function(e){
+        if(e.target.tagName=="TH"){
+            console.log(this);
+            getMySpatialPosition(e.target);
+        }
+    }.bind(this));
+
+    const getMySpatialPosition = (target) => {
+        const parent = target.parentNode;
+        const grandfather = parent.parentNode;
+        const columnIndex = Array.prototype.indexOf.call(parent.children, target);
+        const rowIndex = Array.prototype.indexOf.call(grandfather.children, parent);
+        flipCell(columnIndex,rowIndex);
+    };
+
+    const flipCell = (columnIndex,rowIndex) => {
+        let next = Array.from(board.currentBoard);
+        let curCellValue = board.currentBoard[rowIndex][columnIndex];
+        let nextCellValue = curCellValue ? 0 : 1;
+        next[rowIndex][columnIndex] = nextCellValue;
+        board.currentBoard = next;
+        render(next);
+    };
 
     const generateRandomBoard = () => {
         let tmp = [];
@@ -29,13 +54,19 @@ let game = (function () {
         render(board.currentBoard);
     };
 
+    const startMoving = () => {
+        board.intervalHolder = animate();
+    };
+
+    const closeMoving = () => {
+        clearInterval(board.intervalHolder);
+    };
+
     const animate = () => {
         console.log(board.currentBoard);
-        setInterval(function(){
-
+        return setInterval(function(){
             board.currentBoard = createNextBoard(board.currentBoard);
             render(board.currentBoard);
-
         },100);
     };
 
@@ -78,7 +109,6 @@ let game = (function () {
                     : (countedLiveNeighbours === 3) ? 1 : 0;
             })
         });
-        console.log(createdNextBoard);
         return createdNextBoard;
     };
 
@@ -99,12 +129,10 @@ let game = (function () {
     };
 
     return {
-        init,
-        animate,
+        init
     }
 
 })();
 
 game.init();
-game.animate();
 
