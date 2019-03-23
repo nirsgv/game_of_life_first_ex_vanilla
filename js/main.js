@@ -55,11 +55,14 @@ let game = (function () {
     };
 
     const startMoving = () => {
-        board.intervalHolder = animate();
+        if(!board.intervalHolder){
+            board.intervalHolder = animate();
+        }
     };
 
     const closeMoving = () => {
         clearInterval(board.intervalHolder);
+        board.intervalHolder = null;
     };
 
     const animate = () => {

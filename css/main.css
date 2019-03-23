@@ -6,4 +6,7 @@ th {
     width: 7px;
     height: 7px;
 }
-table {border: none;}
+table {
+    border: none;
+    border-collapse:collapse;
+}
