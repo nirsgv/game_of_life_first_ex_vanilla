@@ -5,19 +5,41 @@ let game = (function () {
         columns: 40,
         currentBoard: [],
         nextBoard: [],
-        stopButton: document.getElementById('stop'),
-        startButton: document.getElementById('start'),
-        ths: document.getElementsByTagName('th'),
         intervalHolder: null,
     };
-    board.stopButton.addEventListener('click',() => {closeMoving()});
-    board.startButton.addEventListener('click',() => {startMoving()});
+    const domELements = {
+        startButton: document.getElementById('start'),
+        stopButton: document.getElementById('stop'),
+        clearButton: document.getElementById('clear'),
+        fillButton: document.getElementById('fill'),
+        ths: document.getElementsByTagName('th'),
+        target: document.getElementById('visual'),
+        numberRows: document.getElementById('numberRows'),
+        numberColumns: document.getElementById('numberColumns'),
+    };
+    // set initial display value of inputs according to data
+    domELements.numberRows.value = board.rows;
+    domELements.numberColumns.value = board.columns;
+
+    domELements.stopButton.addEventListener('click',() => {closeMoving()});
+    domELements.startButton.addEventListener('click',() => {startMoving()});
+    domELements.clearButton.addEventListener('click',() => {clearBoard()});
+    domELements.fillButton.addEventListener('click',() => {fillBoard()});
+    domELements.numberRows.addEventListener('input',(e) => {changeBoardSize(e)});
+    domELements.numberColumns.addEventListener('input',(e) => {changeBoardSize(e)});
     document.addEventListener('click', function(e){
         if(e.target.tagName=="TH"){
             console.log(this);
             getMySpatialPosition(e.target);
         }
     }.bind(this));
+
+    const changeBoardSize = (e) => {
+        var rowsOrColumns = e.currentTarget.id === 'numberRows' ? 'rows' : 'columns';
+        board[rowsOrColumns] = e.target.value;
+        init();
+    };
+
 
     const getMySpatialPosition = (target) => {
         const parent = target.parentNode;
@@ -36,12 +58,24 @@ let game = (function () {
         render(next);
     };
 
-    const generateRandomBoard = () => {
+    const generateBoard = (boardStartMode) => {
         let tmp = [];
         for (let i = 0; i < board.rows; i++) {
             let row = [];
             for (let j = 0; j < board.columns; j++) {
-                let cell = Math.round((Math.random() * 1));
+                let cell;
+
+                switch(boardStartMode) {
+                    case 'full':
+                        cell = 1;
+                        break;
+                    case 'empty':
+                        cell = 0;
+                        break;
+                    case 'random':
+                        cell = Math.round((Math.random() * 1));
+                        break;
+                }
                 row.push(cell);
             }
             tmp.push(row);
@@ -50,7 +84,7 @@ let game = (function () {
     };
 
     const init = () => {
-        board.currentBoard = generateRandomBoard();
+        board.currentBoard = generateBoard('random');
         render(board.currentBoard);
     };
 
@@ -63,6 +97,16 @@ let game = (function () {
     const closeMoving = () => {
         clearInterval(board.intervalHolder);
         board.intervalHolder = null;
+    };
+
+    const clearBoard = () => {
+        board.currentBoard = generateBoard('empty');
+        render(board.currentBoard);
+    };
+
+    const fillBoard = () => {
+        board.currentBoard = generateBoard('full');
+        render(board.currentBoard);
     };
 
     const animate = () => {
@@ -116,7 +160,6 @@ let game = (function () {
     };
 
     const render = (board) => {
-        const target = document.getElementById('visual');
         const built = document.createElement('table');
         for (let i = 0; i < board.length; i++) {
             let tabRow = document.createElement('tr');
@@ -127,8 +170,8 @@ let game = (function () {
             }
             built.appendChild(tabRow);
         }
-        target.innerHTML = '';
-        target.appendChild(built);
+        domELements.target.innerHTML = '';
+        domELements.target.appendChild(built);
     };
 
     return {
