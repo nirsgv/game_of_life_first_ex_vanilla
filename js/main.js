@@ -37,8 +37,8 @@ let game = (function () {
         console.log(event.target);
     }, false);
 
-    document.addEventListener('drop', function (event) {
-        //event.stopPropagation();
+    document.addEventListener('drop', function dragDrop (event) {
+        event.stopPropagation();
 
         //if (!event.target.matches('.cell')) return;
 
@@ -71,9 +71,9 @@ let game = (function () {
     };
 
     const droppingElem = (event) => {
-        //event.stopPropagation();
+        event.stopPropagation();
         console.log('droppingElem');
-        console.log('droppingElem: ', event.target);
+        console.log('droppingElem: ', event);
     };
 
 
