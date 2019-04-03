@@ -5,6 +5,7 @@ let game = (function () {
         columns: 40,
         currentBoard: [],
         nextBoard: [],
+        highlighted: [[1,1],[1,2]],
         intervalHolder: null,
     };
     const domELements = {
@@ -16,6 +17,7 @@ let game = (function () {
         target: document.getElementById('visual'),
         numberRows: document.getElementById('numberRows'),
         numberColumns: document.getElementById('numberColumns'),
+        drag: document.getElementById('drag'),
     };
     // set initial display value of inputs according to data
     domELements.numberRows.value = board.rows;
@@ -27,12 +29,51 @@ let game = (function () {
     domELements.fillButton.addEventListener('click',() => {fillBoard()});
     domELements.numberRows.addEventListener('input',(e) => {changeBoardSize(e)});
     domELements.numberColumns.addEventListener('input',(e) => {changeBoardSize(e)});
+    domELements.drag.addEventListener('dragstart',(e) => {draggingElem(e)});
+    domELements.drag.addEventListener('dragend',(e) => {droppingElem(e)});
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.matches('.cell')) return;
+        console.log(event.target);
+    }, false);
+
+    //document.addEventListener('dragenter', dragEnter);
+    //document.addEventListener('dragleave', dragLeave);
+    //document.addEventListener('drop', dragDrop);
+
+    document.addEventListener('dragover', dragOver = (e) => {
+        e.preventDefault();
+        if (!event.target.matches('.cell')) return;
+        console.log(getMySpatialPosition(event.target));
+    }, false);
+
+    document.addEventListener('drop', dragDrop = (e) => {
+        e.stopPropagation();
+
+        if (!event.target.matches('.cell')) return;
+        const SpatialPosition = getMySpatialPosition(event.target);
+        console.log(SpatialPosition);
+        console.log(event.target);
+        paintCreature(SpatialPosition[0],SpatialPosition[1]);
+
+        console.log(e.target);
+    }, false);
+
+    const draggingElem = (e) => {
+        console.log('draggingElemd');
+    };
+
+    const droppingElem = (e) => {
+        console.log('droppingElem');
+    };
+
     document.addEventListener('click', function(e){
         if(e.target.tagName=="TH"){
-            console.log(this);
-            getMySpatialPosition(e.target);
+            var spatialPos = getMySpatialPosition(e.target);
+            flipCell(spatialPos[0],spatialPos[1]);
         }
     }.bind(this));
+
 
     const changeBoardSize = (e) => {
         var rowsOrColumns = e.currentTarget.id === 'numberRows' ? 'rows' : 'columns';
@@ -46,14 +87,35 @@ let game = (function () {
         const grandfather = parent.parentNode;
         const columnIndex = Array.prototype.indexOf.call(parent.children, target);
         const rowIndex = Array.prototype.indexOf.call(grandfather.children, parent);
-        flipCell(columnIndex,rowIndex);
+        return [columnIndex,rowIndex];
     };
 
-    const flipCell = (columnIndex,rowIndex) => {
+    const flipCell = ( columnIndex, rowIndex ) => {
         let next = Array.from(board.currentBoard);
         let curCellValue = board.currentBoard[rowIndex][columnIndex];
         let nextCellValue = curCellValue ? 0 : 1;
         next[rowIndex][columnIndex] = nextCellValue;
+        board.currentBoard = next;
+        render(next);
+    };
+
+    const highlightCreature = ( columnIndex, rowIndex, shape ) => {
+        let next = Array.from(board.currentBoard);
+        next[rowIndex][columnIndex] = 1;
+        next[rowIndex][columnIndex+1] = 1;
+        next[rowIndex+1][columnIndex] = 1;
+        next[rowIndex+1][columnIndex+1] = 1;
+        board.currentBoard = next;
+        render(next);
+    };
+
+
+    const paintCreature = ( columnIndex, rowIndex, shape ) => {
+        let next = Array.from(board.currentBoard);
+        next[rowIndex][columnIndex] = 1;
+        next[rowIndex][columnIndex+1] = 1;
+        next[rowIndex+1][columnIndex] = 1;
+        next[rowIndex+1][columnIndex+1] = 1;
         board.currentBoard = next;
         render(next);
     };
@@ -110,7 +172,6 @@ let game = (function () {
     };
 
     const animate = () => {
-        console.log(board.currentBoard);
         return setInterval(function(){
             board.currentBoard = createNextBoard(board.currentBoard);
             render(board.currentBoard);
@@ -165,6 +226,7 @@ let game = (function () {
             let tabRow = document.createElement('tr');
             for (let j = 0; j < board[i].length; j++) {
                 let tabColumn = document.createElement('th');
+                tabColumn.classList.add('cell');
                 if(board[i][j]===1){tabColumn.classList.add('on')}
                 tabRow.appendChild(tabColumn);
             }
