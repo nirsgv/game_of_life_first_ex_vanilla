@@ -37,36 +37,47 @@ let game = (function () {
         console.log(event.target);
     }, false);
 
-    //document.addEventListener('dragenter', dragEnter);
-    //document.addEventListener('dragleave', dragLeave);
-    //document.addEventListener('drop', dragDrop);
+    document.addEventListener('drop', function (event) {
+        //event.stopPropagation();
 
-    document.addEventListener('dragover', dragOver = (e) => {
-        e.preventDefault();
-        if (!event.target.matches('.cell')) return;
-        console.log(getMySpatialPosition(event.target));
-    }, false);
+        //if (!event.target.matches('.cell')) return;
 
-    document.addEventListener('drop', dragDrop = (e) => {
-        e.stopPropagation();
-
-        if (!event.target.matches('.cell')) return;
         const SpatialPosition = getMySpatialPosition(event.target);
         console.log(SpatialPosition);
         console.log(event.target);
         paintCreature(SpatialPosition[0],SpatialPosition[1]);
 
-        console.log(e.target);
+        console.log(event.target);
     }, false);
 
-    const draggingElem = (e) => {
+    //document.addEventListener('dragenter', dragEnter);
+    //document.addEventListener('dragleave', dragLeave);
+    //document.addEventListener('drop', dragDrop);
+
+
+    document.addEventListener('dragover',  _.throttle( function dragOver(event) {
+        event.preventDefault();
+
+        if (!event.target.matches('.cell')) return;
+        const SpatialPosition = getMySpatialPosition(event.target);
+        highlightCreature(SpatialPosition[0],SpatialPosition[1]);
+    },60), false);
+
+
+
+    const draggingElem = (event) => {
         console.log('draggingElemd');
+
     };
 
-    const droppingElem = (e) => {
+    const droppingElem = (event) => {
+        //event.stopPropagation();
         console.log('droppingElem');
+        console.log('droppingElem: ', event.target);
     };
 
+
+    // flip cell on click
     document.addEventListener('click', function(e){
         if(e.target.tagName=="TH"){
             var spatialPos = getMySpatialPosition(e.target);
@@ -76,46 +87,57 @@ let game = (function () {
 
 
     const changeBoardSize = (e) => {
-        var rowsOrColumns = e.currentTarget.id === 'numberRows' ? 'rows' : 'columns';
+        const rowsOrColumns = e.currentTarget.id === 'numberRows' ? 'rows' : 'columns';
         board[rowsOrColumns] = e.target.value;
         init();
     };
 
 
     const getMySpatialPosition = (target) => {
-        const parent = target.parentNode;
-        const grandfather = parent.parentNode;
-        const columnIndex = Array.prototype.indexOf.call(parent.children, target);
-        const rowIndex = Array.prototype.indexOf.call(grandfather.children, parent);
+        const parent = target.parentNode,
+              grandfather = parent.parentNode,
+              columnIndex = Array.prototype.indexOf.call(parent.children, target),
+              rowIndex = Array.prototype.indexOf.call(grandfather.children, parent);
         return [columnIndex,rowIndex];
     };
 
     const flipCell = ( columnIndex, rowIndex ) => {
         let next = Array.from(board.currentBoard);
-        let curCellValue = board.currentBoard[rowIndex][columnIndex];
-        let nextCellValue = curCellValue ? 0 : 1;
+        let curCellValue = board.currentBoard[rowIndex][columnIndex].cellState;
+        let nextCellValue = curCellValue ? {cellState:0,cellHighlight:0} : {cellState:1,cellHighlight:0};
         next[rowIndex][columnIndex] = nextCellValue;
         board.currentBoard = next;
         render(next);
     };
 
+    const clearBoardHighlights = (board) => {
+        const createdNextBoard = board.map((row, rowIndex, board) => {
+            return row.map((cell, columnIndex, row) => {
+                cell.cellHighlight = 0;
+                return cell
+            })
+        });
+        return createdNextBoard;
+    };
+
+
     const highlightCreature = ( columnIndex, rowIndex, shape ) => {
-        let next = Array.from(board.currentBoard);
-        next[rowIndex][columnIndex] = 1;
-        next[rowIndex][columnIndex+1] = 1;
-        next[rowIndex+1][columnIndex] = 1;
-        next[rowIndex+1][columnIndex+1] = 1;
-        board.currentBoard = next;
-        render(next);
+        let clearedBoard = clearBoardHighlights(Array.from(board.currentBoard));
+        clearedBoard[rowIndex][columnIndex].cellHighlight = 1;
+        clearedBoard[rowIndex][columnIndex+1].cellHighlight = 1;
+        clearedBoard[rowIndex+1][columnIndex].cellHighlight = 1;
+        clearedBoard[rowIndex+1][columnIndex+1].cellHighlight = 1;
+        board.currentBoard = clearedBoard;
+        render(clearedBoard);
     };
 
 
     const paintCreature = ( columnIndex, rowIndex, shape ) => {
         let next = Array.from(board.currentBoard);
-        next[rowIndex][columnIndex] = 1;
-        next[rowIndex][columnIndex+1] = 1;
-        next[rowIndex+1][columnIndex] = 1;
-        next[rowIndex+1][columnIndex+1] = 1;
+        next[rowIndex][columnIndex] = {cellState:1,cellHighlight:0};
+        next[rowIndex][columnIndex+1] = {cellState:1,cellHighlight:0};
+        next[rowIndex+1][columnIndex] = {cellState:1,cellHighlight:0};
+        next[rowIndex+1][columnIndex+1] = {cellState:1,cellHighlight:0};
         board.currentBoard = next;
         render(next);
     };
@@ -125,19 +147,22 @@ let game = (function () {
         for (let i = 0; i < board.rows; i++) {
             let row = [];
             for (let j = 0; j < board.columns; j++) {
-                let cell;
-
+                let cell = {};
+                let cellState;
+                let cellHighlight = 0;
                 switch(boardStartMode) {
                     case 'full':
-                        cell = 1;
+                        cellState = 1;
                         break;
                     case 'empty':
-                        cell = 0;
+                        cellState = 0;
                         break;
                     case 'random':
-                        cell = Math.round((Math.random() * 1));
+                        cellState = Math.round((Math.random() * 1));
                         break;
                 }
+                cell.cellState = cellState;
+                cell.cellHighlight = cellHighlight;
                 row.push(cell);
             }
             tmp.push(row);
@@ -200,7 +225,7 @@ let game = (function () {
                 if (curColumn === board.currentBoard.length) {
                     curColumn = 0
                 }
-                if (board.currentBoard[curRow][curColumn] === 1) {
+                if (board.currentBoard[curRow][curColumn] && board.currentBoard[curRow][curColumn].cellState === 1) {
                     liveNeighbours++;
                 }
             }
@@ -212,9 +237,9 @@ let game = (function () {
         const createdNextBoard = incomeBoard.map((row, rowIndex, board) => {
             return row.map((cell, columnIndex, row) => {
                 let countedLiveNeighbours = countLiveNeighbours(rowIndex,columnIndex);
-                return cell
-                    ? (countedLiveNeighbours < 2 || countedLiveNeighbours > 3) ? 0 : 1
-                    : (countedLiveNeighbours === 3) ? 1 : 0;
+                return cell.cellState
+                    ? (countedLiveNeighbours < 2 || countedLiveNeighbours > 3) ? {cellState:0,cellHighlight:0} : {cellState:1,cellHighlight:0}
+                    : (countedLiveNeighbours === 3) ? {cellState:1,cellHighlight:0} : {cellState:0,cellHighlight:0}
             })
         });
         return createdNextBoard;
@@ -227,7 +252,8 @@ let game = (function () {
             for (let j = 0; j < board[i].length; j++) {
                 let tabColumn = document.createElement('th');
                 tabColumn.classList.add('cell');
-                if(board[i][j]===1){tabColumn.classList.add('on')}
+                if(board[i][j].cellState===1){tabColumn.classList.add('on')}
+                if(board[i][j].cellHighlight===1){tabColumn.classList.add('highlighted')}
                 tabRow.appendChild(tabColumn);
             }
             built.appendChild(tabRow);

@@ -1,6 +1,9 @@
 th.on {
     background-color: gold;
 }
+th.highlighted {
+    background-color: green;
+}
 th {
     background-color: white;
     width: 7px;
