@@ -8,6 +8,71 @@ let game = (function () {
         highlighted: [[1,1],[1,2]],
         intervalHolder: null,
     };
+    const creatures = {
+            block: {
+                structure: [
+                    [1,1],[1,1]
+                ],
+                kind: 'stillLifes'
+            },
+            beehive: {
+                structure: [
+                    [0,1,1,0],[1,0,0,1],[0,1,1,0]
+                ],
+                kind: 'stillLifes'
+            },
+            loaf: {
+                structure: [
+                    [0,1,1,0],[1,0,0,1],[0,1,0,1],[0,0,1,0]
+                ],
+                kind: 'stillLifes'
+            },
+            boat: {
+                structure: [
+                    [1,1,0],[1,0,1],[0,1,0]
+                ],
+                kind: 'stillLifes'
+            },
+            tub: {
+                structure: [
+                    [0,1,0],[1,0,1],[0,1,0]
+                ],
+                kind: 'stillLifes'
+            },
+            blinker: {
+                structure: [
+                    [1,1,1]
+                ],
+                kind: 'oscillators'
+            },
+            toad: {
+                structure: [
+                    [0,1,1,1],[1,1,1,0]
+                ],
+                kind: 'oscillators'
+            },
+            beacon: {
+                structure: [
+                    [1,1,0,0],[1,1,0,0],[0,0,1,1],[0,0,1,1]
+                ],
+                kind: 'oscillators'
+            },
+            glider: {
+                structure: [
+                    [0,1,0],[0,0,1],[1,1,1]
+                ],
+                kind: 'spaceShips'
+            },
+            lightWeightSpaceShip: {
+
+            },
+            middleWeightSpaceShip: {
+
+            },
+            heavyWeightSpaceShip: {
+
+            },
+    };
     const domELements = {
         startButton: document.getElementById('start'),
         stopButton: document.getElementById('stop'),
@@ -38,9 +103,9 @@ let game = (function () {
     }, false);
 
     document.addEventListener('drop', function dragDrop (event) {
-        event.stopPropagation();
+        event.preventDefault();
 
-        //if (!event.target.matches('.cell')) return;
+        if (!event.target.matches('.cell')) return;
 
         const SpatialPosition = getMySpatialPosition(event.target);
         console.log(SpatialPosition);
@@ -48,20 +113,20 @@ let game = (function () {
         paintCreature(SpatialPosition[0],SpatialPosition[1]);
 
         console.log(event.target);
-    }, false);
+    }, true);
 
     //document.addEventListener('dragenter', dragEnter);
     //document.addEventListener('dragleave', dragLeave);
     //document.addEventListener('drop', dragDrop);
 
 
-    document.addEventListener('dragover',  _.throttle( function dragOver(event) {
+    document.addEventListener('dragover',  function dragOver(event) {
         event.preventDefault();
-
+        console.log(event.target.id);
         if (!event.target.matches('.cell')) return;
         const SpatialPosition = getMySpatialPosition(event.target);
         highlightCreature(SpatialPosition[0],SpatialPosition[1]);
-    },60), false);
+    }, true);
 
 
 
@@ -108,6 +173,7 @@ let game = (function () {
         next[rowIndex][columnIndex] = nextCellValue;
         board.currentBoard = next;
         render(next);
+        paint(next);
     };
 
     const clearBoardHighlights = (board) => {
@@ -123,23 +189,29 @@ let game = (function () {
 
     const highlightCreature = ( columnIndex, rowIndex, shape ) => {
         let clearedBoard = clearBoardHighlights(Array.from(board.currentBoard));
-        clearedBoard[rowIndex][columnIndex].cellHighlight = 1;
-        clearedBoard[rowIndex][columnIndex+1].cellHighlight = 1;
-        clearedBoard[rowIndex+1][columnIndex].cellHighlight = 1;
-        clearedBoard[rowIndex+1][columnIndex+1].cellHighlight = 1;
+        const structure = creatures.block.structure;
+        for ( var i=0 ; i<structure.length ; i++ ){
+            for ( var j=0 ; j<structure[i].length ; j++ ){
+                clearedBoard[ rowIndex + i ][ columnIndex + j ].cellHighlight = 1;
+            }
+        }
+
         board.currentBoard = clearedBoard;
-        render(clearedBoard);
+        paint(clearedBoard);
     };
 
 
     const paintCreature = ( columnIndex, rowIndex, shape ) => {
         let next = Array.from(board.currentBoard);
-        next[rowIndex][columnIndex] = {cellState:1,cellHighlight:0};
-        next[rowIndex][columnIndex+1] = {cellState:1,cellHighlight:0};
-        next[rowIndex+1][columnIndex] = {cellState:1,cellHighlight:0};
-        next[rowIndex+1][columnIndex+1] = {cellState:1,cellHighlight:0};
+        const structure = creatures.block.structure;
+        for ( var i=0 ; i<structure.length ; i++ ){
+            for ( var j=0 ; j<structure[i].length ; j++ ){
+                next[ rowIndex + i ][ columnIndex + j ] = {cellState:1,cellHighlight:0};
+            }
+        }
+
         board.currentBoard = next;
-        render(next);
+        paint(next);
     };
 
     const generateBoard = (boardStartMode) => {
@@ -173,6 +245,7 @@ let game = (function () {
     const init = () => {
         board.currentBoard = generateBoard('random');
         render(board.currentBoard);
+        paint(board.currentBoard);
     };
 
     const startMoving = () => {
@@ -188,18 +261,19 @@ let game = (function () {
 
     const clearBoard = () => {
         board.currentBoard = generateBoard('empty');
-        render(board.currentBoard);
+        paint(board.currentBoard);
     };
 
     const fillBoard = () => {
         board.currentBoard = generateBoard('full');
-        render(board.currentBoard);
+        paint(board.currentBoard);
     };
 
     const animate = () => {
         return setInterval(function(){
             board.currentBoard = createNextBoard(board.currentBoard);
-            render(board.currentBoard);
+            //render(board.currentBoard);
+            paint(board.currentBoard);
         },100);
     };
 
@@ -252,14 +326,25 @@ let game = (function () {
             for (let j = 0; j < board[i].length; j++) {
                 let tabColumn = document.createElement('th');
                 tabColumn.classList.add('cell');
-                if(board[i][j].cellState===1){tabColumn.classList.add('on')}
-                if(board[i][j].cellHighlight===1){tabColumn.classList.add('highlighted')}
                 tabRow.appendChild(tabColumn);
             }
             built.appendChild(tabRow);
         }
         domELements.target.innerHTML = '';
         domELements.target.appendChild(built);
+    };
+
+    const paint = (board) => {
+        const cells = document.querySelectorAll('.cell');
+        let cellIndex = 0;
+        for (let i = 0; i < board.length; i++) {
+            for (let j = 0; j < board[i].length; j++) {
+                if (board[i][j].cellHighlight===0 && board[i][j].cellState===1){cells[cellIndex].className = 'cell on'}
+                else if (board[i][j].cellHighlight===1){cells[cellIndex].className = 'cell highlighted'}
+                else {cells[cellIndex].className = 'cell'}
+                cellIndex++;
+            }
+        }
     };
 
     return {
