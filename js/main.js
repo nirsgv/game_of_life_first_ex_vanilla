@@ -5,8 +5,8 @@ let game = (function () {
         columns: 40,
         currentBoard: [],
         nextBoard: [],
-        highlighted: [[1,1],[1,2]],
         intervalHolder: null,
+        chosenKind: 'stillLifes',
         chosenCreature: 'beehive',
     };
     const creatures = {
@@ -14,49 +14,65 @@ let game = (function () {
                 structure: [
                     [1,1],[1,1]
                 ],
-                kind: 'stillLifes'
+                kind: 'stillLifes',
+                title: 'Block',
+                value: 'block'
             },
             beehive: {
                 structure: [
                     [0,1,1,0],[1,0,0,1],[0,1,1,0]
                 ],
-                kind: 'stillLifes'
+                kind: 'stillLifes',
+                title: 'Beehive',
+                value: 'beehive'
             },
             loaf: {
                 structure: [
                     [0,1,1,0],[1,0,0,1],[0,1,0,1],[0,0,1,0]
                 ],
-                kind: 'stillLifes'
+                kind: 'stillLifes',
+                title: 'Loaf',
+                value: 'loaf'
             },
             boat: {
                 structure: [
                     [1,1,0],[1,0,1],[0,1,0]
                 ],
-                kind: 'stillLifes'
+                kind: 'stillLifes',
+                title: 'Boat',
+                value: 'boat'
             },
             tub: {
                 structure: [
                     [0,1,0],[1,0,1],[0,1,0]
                 ],
-                kind: 'stillLifes'
+                kind: 'stillLifes',
+                title: 'Tub',
+                value: 'tub'
             },
             blinker: {
                 structure: [
                     [1,1,1]
                 ],
-                kind: 'oscillators'
+                kind: 'oscillators',
+                title: 'Blinker',
+                value: 'blinker'
             },
             toad: {
                 structure: [
                     [0,1,1,1],[1,1,1,0]
                 ],
-                kind: 'oscillators'
+                kind: 'oscillators',
+                title: 'Toad',
+                value: 'toad'
             },
             beacon: {
                 structure: [
                     [1,1,0,0],[1,1,0,0],[0,0,1,1],[0,0,1,1]
                 ],
-                kind: 'oscillators'
+                kind: 'oscillators',
+                title: 'Beacon',
+                value: 'beacon'
             },
             pulsar: {
                 structure: [
@@ -76,37 +92,49 @@ let game = (function () {
                     [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
                     [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
                 ],
-                kind: 'oscillators'
+                kind: 'oscillators',
+                title: 'Pulsar',
+                value: 'glider'
             },
             pentaDecathlon: {
                 structure: [
                     [1,1,1],[1,0,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,0,1],[1,1,1]
                 ],
-                kind: 'oscillators'
+                kind: 'oscillators',
+                title: 'Penta decathlon',
+                value: 'pentaDecathlon'
             },
             glider: {
                 structure: [
                     [0,1,0],[0,0,1],[1,1,1]
                 ],
-                kind: 'spaceShips'
+                kind: 'spaceShips',
+                title: 'Glider',
+                value: 'glider'
             },
             lightWeightSpaceShip: {
                 structure: [
                     [1,0,0,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1]
                 ],
-                kind: 'spaceShips'
+                kind: 'spaceShips',
+                title: 'Light weight spaceShip',
+                value: 'lightWeightSpaceShip'
             },
             middleWeightSpaceShip: {
                 structure: [
                     [0,1,1,0,0,0],[1,1,0,1,1,1],[0,1,1,1,1,1],[0,0,1,1,1,0]
                 ],
-                kind: 'spaceShips'
+                kind: 'spaceShips',
+                title: 'Middle weight spaceShip',
+                value: 'middleWeightSpaceShip'
             },
             heavyWeightSpaceShip: {
                 structure: [
                     [0,1,1,0,0,0,0],[1,1,0,1,1,1,1],[0,1,1,1,1,1,1],[0,0,1,1,1,1,0]
                 ],
-                kind: 'spaceShips'
+                kind: 'spaceShips',
+                title: 'Heavy weight spaceShip',
+                value: 'heavyWeightSpaceShip'
             },
     };
     const domELements = {
@@ -119,7 +147,9 @@ let game = (function () {
         numberRows: document.getElementById('numberRows'),
         numberColumns: document.getElementById('numberColumns'),
         drag: document.getElementById('drag'),
+        multiSelect: document.getElementById('multiSelect'),
         creatureSelect: Array.from(document.querySelectorAll('[creatureSelect]')),
+        kindControllers: Array.from(document.querySelectorAll('[data-kind]')),
     };
     // set initial display value of inputs according to data
     domELements.numberRows.value = board.rows;
@@ -134,6 +164,35 @@ let game = (function () {
     domELements.drag.addEventListener('dragstart',(e) => {draggingElem(e)});
     domELements.drag.addEventListener('dragend',(e) => {droppingElem(e)});
     domELements.drag.addEventListener('dragend',(e) => {droppingElem(e)});
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.matches('[data-kind]')) return;
+        let incomeCat = event.target.dataset.kind;
+        board.chosenKind = incomeCat;
+        initSelectELems(incomeCat);
+        for ( var i=0 ; i < domELements.kindControllers.length ; i++ ) {
+            if ( domELements.kindControllers[i].dataset.kind === board.chosenKind ) {
+                domELements.kindControllers[i].className = 'active';
+            } else {
+                domELements.kindControllers[i].className = '';
+            }
+            console.log(domELements.kindControllers[i].dataset.kind);
+        }
+
+    }, false);
+
+    const initSelectELems = (incomeCat) => {
+        var crsArray = [];
+        for ( let item in creatures ) {
+            creatures[item].kind === board.chosenKind && crsArray.push(creatures[item]);
+        }
+        const multiSelectDom = crsArray.map((item) => {
+
+            return `<option value=${item.value}>${item.title}</option>`
+        });
+        domELements.multiSelect.innerHTML = multiSelectDom;
+    };
+
 
     document.addEventListener('change', function (event) {
         if (!event.target.matches('[creatureSelect]')) return;
@@ -256,7 +315,7 @@ let game = (function () {
     const paintCreature = ( columnIndex, rowIndex, shape ) => {
         let next = Array.from(board.currentBoard);
         const currentCreature = board.chosenCreature;
-        const structure = creatures[currentCreature].structure;
+        const structure = creatures[currentCreature] && creatures[currentCreature].structure;
         let curBoard = board.currentBoard;
 
         let rowWithEdgeCalculated;
@@ -310,6 +369,13 @@ let game = (function () {
         render(board.currentBoard);
         paint(board.currentBoard);
     };
+
+    const initSelect = () => {
+        board.currentBoard = generateBoard('random');
+        render(board.currentBoard);
+        paint(board.currentBoard);
+    };
+
 
     const startMoving = () => {
         if(!board.intervalHolder){

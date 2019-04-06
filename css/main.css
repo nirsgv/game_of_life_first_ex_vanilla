@@ -1,3 +1,13 @@
+header{
+  position: fixed;
+    height: 100px;
+    top: 0;
+    width: 100%;
+}
+main#visual{
+    position: relative;
+    margin-top: 200px;
+}
 th.on {
     background-color: gold;
 }
@@ -12,4 +22,12 @@ th {
 table {
     border: none;
     border-collapse:collapse;
+}
+
+[data-kind]{
+    color: #aaa;
+    display: inline-block;
+}
+[data-kind].active{
+    color: #333;
 }
