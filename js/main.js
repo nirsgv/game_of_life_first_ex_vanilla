@@ -7,6 +7,7 @@ let game = (function () {
         nextBoard: [],
         highlighted: [[1,1],[1,2]],
         intervalHolder: null,
+        chosenCreature: 'beehive',
     };
     const creatures = {
             block: {
@@ -57,6 +58,32 @@ let game = (function () {
                 ],
                 kind: 'oscillators'
             },
+            pulsar: {
+                structure: [
+                    [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
+                    [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
+                    [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,0,0,1,1,0,1,1,0,0,1,1,1],
+                    [0,0,1,0,1,0,1,0,1,0,1,0,1,0,0],
+                    [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0],
+                    [0,0,1,0,1,0,1,0,1,0,1,0,1,0,0],
+                    [1,1,1,0,0,1,1,0,1,1,0,0,1,1,1],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0],
+                    [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
+                    [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
+                ],
+                kind: 'oscillators'
+            },
+            pentaDecathlon: {
+                structure: [
+                    [1,1,1],[1,0,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,0,1],[1,1,1]
+                ],
+                kind: 'oscillators'
+            },
             glider: {
                 structure: [
                     [0,1,0],[0,0,1],[1,1,1]
@@ -64,13 +91,22 @@ let game = (function () {
                 kind: 'spaceShips'
             },
             lightWeightSpaceShip: {
-
+                structure: [
+                    [1,0,0,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1]
+                ],
+                kind: 'spaceShips'
             },
             middleWeightSpaceShip: {
-
+                structure: [
+                    [0,1,1,0,0,0],[1,1,0,1,1,1],[0,1,1,1,1,1],[0,0,1,1,1,0]
+                ],
+                kind: 'spaceShips'
             },
             heavyWeightSpaceShip: {
-
+                structure: [
+                    [0,1,1,0,0,0,0],[1,1,0,1,1,1,1],[0,1,1,1,1,1,1],[0,0,1,1,1,1,0]
+                ],
+                kind: 'spaceShips'
             },
     };
     const domELements = {
@@ -83,6 +119,7 @@ let game = (function () {
         numberRows: document.getElementById('numberRows'),
         numberColumns: document.getElementById('numberColumns'),
         drag: document.getElementById('drag'),
+        creatureSelect: Array.from(document.querySelectorAll('[creatureSelect]')),
     };
     // set initial display value of inputs according to data
     domELements.numberRows.value = board.rows;
@@ -96,6 +133,12 @@ let game = (function () {
     domELements.numberColumns.addEventListener('input',(e) => {changeBoardSize(e)});
     domELements.drag.addEventListener('dragstart',(e) => {draggingElem(e)});
     domELements.drag.addEventListener('dragend',(e) => {droppingElem(e)});
+    domELements.drag.addEventListener('dragend',(e) => {droppingElem(e)});
+
+    document.addEventListener('change', function (event) {
+        if (!event.target.matches('[creatureSelect]')) return;
+        board.chosenCreature = event.target.value;
+    }, false);
 
     document.addEventListener('click', function (event) {
         if (!event.target.matches('.cell')) return;
@@ -189,10 +232,19 @@ let game = (function () {
 
     const highlightCreature = ( columnIndex, rowIndex, shape ) => {
         let clearedBoard = clearBoardHighlights(Array.from(board.currentBoard));
-        const structure = creatures.block.structure;
+        const currentCreature = board.chosenCreature;
+        const structure = creatures[currentCreature].structure;
+        let curBoard = board.currentBoard;
+
+        let rowWithEdgeCalculated;
+        let columnWithEdgeCalculated;
         for ( var i=0 ; i<structure.length ; i++ ){
             for ( var j=0 ; j<structure[i].length ; j++ ){
-                clearedBoard[ rowIndex + i ][ columnIndex + j ].cellHighlight = 1;
+                columnWithEdgeCalculated = checkHorizontalEdge(rowIndex + i,columnIndex + j,curBoard);
+                rowWithEdgeCalculated = checkVerticalEdge(rowIndex + i,columnIndex + j,curBoard);
+                if (clearedBoard && clearedBoard[ rowWithEdgeCalculated ][ columnWithEdgeCalculated ] && structure[i][j] ){
+                    clearedBoard[ rowWithEdgeCalculated ][ columnWithEdgeCalculated ].cellHighlight = 1;
+                }
             }
         }
 
@@ -203,10 +255,21 @@ let game = (function () {
 
     const paintCreature = ( columnIndex, rowIndex, shape ) => {
         let next = Array.from(board.currentBoard);
-        const structure = creatures.block.structure;
+        const currentCreature = board.chosenCreature;
+        const structure = creatures[currentCreature].structure;
+        let curBoard = board.currentBoard;
+
+        let rowWithEdgeCalculated;
+        let columnWithEdgeCalculated;
+
         for ( var i=0 ; i<structure.length ; i++ ){
             for ( var j=0 ; j<structure[i].length ; j++ ){
-                next[ rowIndex + i ][ columnIndex + j ] = {cellState:1,cellHighlight:0};
+                columnWithEdgeCalculated = checkHorizontalEdge(rowIndex + i,columnIndex + j,curBoard);
+                rowWithEdgeCalculated = checkVerticalEdge(rowIndex + i,columnIndex + j,curBoard);
+
+                if (structure[i][j]) {
+                    next[rowWithEdgeCalculated][columnWithEdgeCalculated] = {cellState: 1, cellHighlight: 0};
+                }
             }
         }
 
@@ -277,6 +340,26 @@ let game = (function () {
         },100);
     };
 
+    const checkHorizontalEdge = (curRow,curColumn,curBoard) => {
+        if (curColumn === -1) {
+            curColumn = curBoard[curRow].length - 1
+        }
+        if (curColumn >= curBoard[curRow].length) {
+            curColumn = curColumn - curBoard[curRow].length;
+        }
+        return curColumn;
+    };
+
+    const checkVerticalEdge = (curRow,curColumn,curBoard) => {
+        if (curRow === -1) {
+            curRow = curBoard.length - 1;
+        }
+        if (curRow >= curBoard.length) {
+            curRow = curRow - curBoard.length;
+        }
+        return curRow;
+    };
+
     const countLiveNeighbours = (boardRow, boardColumn) => {
         let liveNeighbours = 0;
         for (let i = -1; i <= 1; i++) {
@@ -284,21 +367,14 @@ let game = (function () {
                 if (i === 0 && j === 0) {
                     continue;
                 }
-                let curRow, curColumn;
+                let curRow, curColumn, curBoard = board.currentBoard;
+
                 curRow = boardRow + i;
                 curColumn = boardColumn + j;
-                if (curRow === -1) {
-                    curRow = board.currentBoard.length - 1
-                }
-                if (curRow === board.currentBoard.length) {
-                    curRow = 0
-                }
-                if (curColumn === -1) {
-                    curColumn = board.currentBoard[curRow].length - 1
-                }
-                if (curColumn === board.currentBoard.length) {
-                    curColumn = 0
-                }
+
+                curRow = checkVerticalEdge(curRow,curColumn,curBoard);
+                curColumn = checkHorizontalEdge(curRow,curColumn,curBoard);
+
                 if (board.currentBoard[curRow][curColumn] && board.currentBoard[curRow][curColumn].cellState === 1) {
                     liveNeighbours++;
                 }
